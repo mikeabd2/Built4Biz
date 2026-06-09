@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Nav } from "@/components/Nav";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase, type Profile } from "@/lib/supabaseClient";
+import { supabase, type Member } from "@/lib/supabaseClient";
 import { initials, firstName } from "@/lib/ui";
 
 export default function DirectoryPage() {
@@ -18,19 +18,19 @@ export default function DirectoryPage() {
 }
 
 function Directory() {
-  const { user } = useAuth();
+  const { member } = useAuth();
   const router = useRouter();
-  const [members, setMembers] = useState<Profile[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [q, setQ] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase
-        .from("profiles")
+        .from("members")
         .select("*")
         .order("full_name", { ascending: true });
-      setMembers((data ?? []) as Profile[]);
+      setMembers((data ?? []) as Member[]);
       setLoaded(true);
     })();
   }, []);
@@ -52,8 +52,7 @@ function Directory() {
         <div>
           <h1 className="font-display text-3xl text-ink">Directory</h1>
           <p className="text-ink/55 text-sm mt-1">
-            {members.length} member{members.length === 1 ? "" : "s"} in the
-            circle.
+            {members.length} member{members.length === 1 ? "" : "s"} in the group.
           </p>
         </div>
         <input
@@ -73,31 +72,28 @@ function Directory() {
               ? "No members yet."
               : "No members match that search."}
           </p>
-          {members.length === 0 && (
-            <p className="text-ink/45 text-sm mt-1">
-              As people join and fill out their profiles, they'll appear here.
-            </p>
-          )}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 mt-6">
           {filtered.map((m) => (
-            <article
-              key={m.id}
-              className="rounded-2xl border border-line bg-white p-5"
-            >
+            <article key={m.id} className="rounded-2xl border border-line bg-white p-5">
               <div className="flex items-start gap-3">
                 <span className="shrink-0 grid place-items-center w-11 h-11 rounded-full bg-sage text-pine-dark font-display text-lg">
                   {initials(m.full_name)}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-medium text-ink truncate">
                       {m.full_name || "Member"}
                     </h2>
-                    {m.id === user?.id && (
+                    {m.id === member?.id && (
                       <span className="text-[11px] text-ink/45 border border-line rounded-full px-1.5 py-0.5">
                         You
+                      </span>
+                    )}
+                    {m.is_admin && (
+                      <span className="text-[11px] text-amber border border-amber/40 rounded-full px-1.5 py-0.5">
+                        Admin
                       </span>
                     )}
                   </div>
@@ -118,40 +114,26 @@ function Directory() {
 
               <div className="flex flex-wrap gap-2 mt-4">
                 {m.phone && (
-                  <a
-                    href={`tel:${m.phone}`}
-                    className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors"
-                  >
+                  <a href={`tel:${m.phone}`} className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors">
                     Call
                   </a>
                 )}
                 {m.phone && (
-                  <a
-                    href={`sms:${m.phone}`}
-                    className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors"
-                  >
+                  <a href={`sms:${m.phone}`} className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors">
                     Text
                   </a>
                 )}
                 {m.email && (
-                  <a
-                    href={`mailto:${m.email}`}
-                    className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors"
-                  >
+                  <a href={`mailto:${m.email}`} className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors">
                     Email
                   </a>
                 )}
                 {m.website && (
-                  <a
-                    href={normalizeUrl(m.website)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors"
-                  >
+                  <a href={normalizeUrl(m.website)} target="_blank" rel="noreferrer" className="text-xs rounded-lg border border-line px-2.5 py-1.5 text-ink/70 hover:bg-sage transition-colors">
                     Website
                   </a>
                 )}
-                {m.id !== user?.id && (
+                {m.id !== member?.id && (
                   <button
                     onClick={() => router.push(`/referrals?to=${m.id}`)}
                     className="ml-auto text-xs rounded-lg bg-pine hover:bg-pine-dark text-paper px-2.5 py-1.5 font-medium transition-colors"

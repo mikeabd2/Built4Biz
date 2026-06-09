@@ -1,92 +1,76 @@
 # Built for Biz
 
-A small, private web app for a networking group to share contact info, pass
-referrals, and track 1-on-1 meetings. Built with Next.js 14 (App Router) +
-Supabase + Tailwind.
+A private web app for a networking group to share contacts, pass referrals,
+track 1-on-1s, and report on activity. Next.js 14 (App Router) + Supabase +
+Tailwind.
 
 Screens:
 
-- **Directory** — every member's contact card, searchable by name / company /
-  category, with call · text · email · website buttons and a "Refer to …"
-  shortcut.
-- **Referrals** — log a referral for another member, then track it through
+- **Directory** — every member's contact card, searchable, with call · text ·
+  email · website and a "Refer to …" shortcut.
+- **Referrals** — log a referral (with a date), track it through
   _New → Contacted → In progress → Closed_. Receivers can advance the status.
-- **1-on-1s** — log a one-to-one meeting: the date, who you met with, the
-  strategic-alliance categories you discussed, and what you learned. These
-  notes are **private to you**.
-- **My profile** — each member edits what the group sees about them.
+- **1-on-1s** — log a meeting: date, who you met, strategic-alliance categories,
+  and what you learned. Private to you (admins can see/add for anyone).
+- **Reports** — referral activity by week or month, with presets (this/last
+  week, this/last month, this year, all time) and custom date ranges, plus a
+  per-member given/received table.
+- **My profile** — each member edits what the group sees.
+- **Roster** (admins only) — add/edit members, manage admins, see who has
+  joined.
 
-Plus a simple **Home** dashboard: referrals given / received, 1-on-1s logged,
-member count, and recent activity.
+## How membership works
 
----
+Members are **roster entries** that exist whether or not the person has logged
+in. When someone signs up with an email that matches a roster entry, their
+login is linked to that entry automatically. This lets you pre-load the whole
+roster and lets admins log referrals/1-on-1s for people who haven't signed up
+yet.
 
-## Setup (about 10 minutes)
+## Setup
 
-### 1. Create a Supabase project
+### 1. Create the database
+1. New Supabase project → **SQL Editor → New query** → paste `supabase/schema.sql` → Run.
+2. New query → paste `supabase/seed_roster.sql` → Run. This loads the 33-member
+   Built 4 Biz roster (re-running is safe; it matches on email).
+3. **Settings → API**: copy the Project URL and the anon/public key.
 
-1. Go to [supabase.com](https://supabase.com) → **New project**.
-2. Once it's ready, open **SQL Editor → New query**, paste in the contents of
-   `supabase/schema.sql`, and **Run**. This creates the tables, row-level
-   security, and the trigger that gives each new user a profile.
-3. Go to **Project Settings → API** and copy the **Project URL** and the
-   **anon / public** key.
+### 2. Auth
+- **Authentication → Providers → Email**: enabled.
+- For easy onboarding, you can turn **off** "Confirm email" so members are in
+  immediately after signing up. If you keep it on, set up custom SMTP
+  (Authentication → Emails), since Supabase's built-in email is rate-limited.
 
-### 2. Configure auth
-
-- In **Authentication → Providers → Email**, make sure Email is enabled.
-- For a smooth signup with a small group, you can turn **off** "Confirm email"
-  (Authentication → Sign In / Providers) so members are signed in immediately
-  after creating an account. Leave it on if you'd rather verify emails — in
-  that case set up custom SMTP (Authentication → Emails) so confirmation
-  messages actually deliver, since Supabase's built-in email is rate-limited.
-
-### 3. Run locally
-
+### 3. Run / deploy
 ```bash
-cp .env.local.example .env.local   # then fill in your URL + anon key
+cp .env.local.example .env.local   # fill in URL + anon key
 npm install
 npm run dev
 ```
+Deploy to Vercel: push to GitHub, import the repo, add
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, deploy.
 
-Open http://localhost:3000.
+## Admins
 
-### 4. Deploy to Vercel
+The seed marks **Gerard Giacona (Chair)**, **Brad Quail (Co-Chair)**, and
+**Michael Abdelnour** as admins. Admins can:
+- manage the roster (add/edit/remove members, grant or revoke admin),
+- log referrals and 1-on-1s on any member's behalf (handy for backfilling),
+- see all 1-on-1s.
 
-1. Push this folder to a GitHub repo.
-2. In Vercel, **Add New → Project** and import the repo.
-3. Add the two environment variables (**Settings → Environment Variables**):
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Deploy.
+Admin status is just the `is_admin` flag on a member. Change admins anytime from
+the **Roster** tab, or in SQL:
+```sql
+update public.members set is_admin = true where email = 'someone@example.com';
+```
 
----
+## Notes & customizations
 
-## How members join
-
-Anyone with the app URL can create an account from the login screen. For a
-trusted group that's usually fine — just share the link. To lock it down later,
-a couple of options:
-
-- **Invite-only:** turn off open signups in Supabase and add members yourself
-  via **Authentication → Users → Add user**.
-- **Allowlist:** keep a table of approved emails and check it in the signup
-  flow.
-
-## Notes & easy customizations
-
-- **Privacy of referrals:** by default every member can read all referral
-  activity (good for accountability in a referral group). To make referrals
-  private to the two people involved, swap the `members read referrals` policy
-  in `schema.sql` for the commented-out version right above it, and re-run.
-- **Categories:** the profile "Business category" is free text. If your group
-  uses fixed categories (one per seat, BNI-style), change that input to a
-  `<select>` in `app/profile/page.tsx`.
-- **Strategic alliances:** the 1-on-1 alliance options live in the
-  `STRATEGIC_ALLIANCES` list in `lib/ui.ts` — add, remove, or reword them to
-  match your group.
-- **1-on-1 privacy:** 1-on-1 notes are owner-only. If you'd ever want the
-  person you met with to see the entry too, broaden the `owner reads own 1on1s`
-  policy in `schema.sql` to also allow `auth.uid() = met_with_id`.
-- **Brand:** colors and fonts live in `tailwind.config.ts` and
-  `app/layout.tsx`.
+- **Strategic alliances:** the 1-on-1 options are the `STRATEGIC_ALLIANCES` list
+  in `lib/ui.ts`.
+- **Referral privacy:** referrals are group-visible for accountability and
+  reporting. To restrict, edit the `members read referrals` policy in
+  `schema.sql`.
+- **Reports scope:** reports use each referral's `referral_date`, so admin
+  backfilled entries land in the right week/month.
+- **Brand:** colors and fonts live in `tailwind.config.ts` and `app/layout.tsx`.

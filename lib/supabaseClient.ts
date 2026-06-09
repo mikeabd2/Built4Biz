@@ -4,31 +4,31 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!url || !anon) {
-  // Surfaces a clear message during local dev if env vars are missing.
   console.warn(
     "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
       "Add them to .env.local (local) and your Vercel project settings (prod)."
   );
 }
 
-// Fall back to harmless placeholders if env vars are missing so the app
-// builds and shows a clear console warning instead of crashing at import.
-// Real NEXT_PUBLIC_* values are inlined at build time on Vercel.
+// Harmless placeholders so the app builds and warns instead of crashing if
+// env vars are missing. Real NEXT_PUBLIC_* values are inlined at build time.
 export const supabase = createClient(
   url || "https://placeholder.supabase.co",
   anon || "placeholder-anon-key",
   { auth: { persistSession: true, autoRefreshToken: true } }
 );
 
-export type Profile = {
+export type Member = {
   id: string;
+  user_id: string | null;
   full_name: string;
   company: string;
   category: string;
-  email: string;
+  email: string | null;
   phone: string;
   website: string;
   bio: string;
+  is_admin: boolean;
 };
 
 export type Referral = {
@@ -40,6 +40,7 @@ export type Referral = {
   contact_email: string;
   description: string;
   status: string;
+  referral_date: string;
   created_at: string;
 };
 
