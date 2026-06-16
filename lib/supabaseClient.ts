@@ -10,8 +10,6 @@ if (!url || !anon) {
   );
 }
 
-// Harmless placeholders so the app builds and warns instead of crashing if
-// env vars are missing. Real NEXT_PUBLIC_* values are inlined at build time.
 export const supabase = createClient(
   url || "https://placeholder.supabase.co",
   anon || "placeholder-anon-key",
@@ -29,6 +27,13 @@ export type Member = {
   website: string;
   bio: string;
   is_admin: boolean;
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+  tiktok: string;
+  youtube: string;
+  x_twitter: string;
+  google_review_url: string;
 };
 
 export type Referral = {

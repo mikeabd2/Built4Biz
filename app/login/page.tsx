@@ -30,6 +30,19 @@ export default function LoginPage() {
     setMsg(null);
     try {
       if (mode === "signup") {
+        // Roster-only: confirm this email is on the group roster before signing up.
+        const { data: onRoster, error: checkErr } = await supabase.rpc(
+          "email_on_roster",
+          { p_email: email.trim() }
+        );
+        if (checkErr) throw checkErr;
+        if (!onRoster) {
+          setErr(
+            "That email isn't on our roster. Check the spelling, or ask a group admin to add or update your entry."
+          );
+          setBusy(false);
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -117,7 +130,7 @@ export default function LoginPage() {
           <p className="text-ink/55 text-sm mt-1">
             {mode === "signin"
               ? "Welcome back to the group."
-              : "Join the group and set up your member profile."}
+              : "Sign up with the email listed for you on the group roster."}
           </p>
 
           <div className="mt-7 space-y-3">

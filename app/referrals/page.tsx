@@ -122,6 +122,7 @@ function Referrals() {
               tab={tab}
               otherName={tab === "given" ? names[r.receiver_id] : names[r.giver_id]}
               canEditStatus={tab === "received" || r.giver_id === member?.id || isAdmin}
+              canDelete={r.giver_id === member?.id || isAdmin}
               onChanged={load}
             />
           ))}
@@ -234,12 +235,14 @@ function NewReferral({
 }
 
 function ReferralRow({
-  referral, tab, otherName, canEditStatus, onChanged,
+  referral, tab, otherName, canEditStatus, canDelete, onChanged,
 }: {
-  referral: Referral; tab: "given" | "received"; otherName?: string; canEditStatus: boolean; onChanged: () => void;
+  referral: Referral; tab: "given" | "received"; otherName?: string;
+  canEditStatus: boolean; canDelete: boolean; onChanged: () => void;
 }) {
   const [status, setStatus] = useState(referral.status);
   const [saving, setSaving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const updateStatus = async (next: string) => {
     setStatus(next);
@@ -249,12 +252,17 @@ function ReferralRow({
     onChanged();
   };
 
+  const remove = async () => {
+    await supabase.from("referrals").delete().eq("id", referral.id);
+    onChanged();
+  };
+
   const who = firstName(otherName || "a member");
 
   return (
     <li className="rounded-2xl border border-line bg-white p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm text-ink">
             <span className="font-mono text-ink/70">{tab === "given" ? "You" : who}</span>
             <span className="text-amber px-1.5">→</span>
@@ -270,15 +278,36 @@ function ReferralRow({
           <p className="text-xs text-ink/40 mt-2">{fmtDate(referral.referral_date)}</p>
         </div>
 
-        <div className="shrink-0 text-right">
+        <div className="shrink-0 flex flex-col items-end gap-2">
           {canEditStatus ? (
-            <select value={status} onChange={(e) => updateStatus(e.target.value)} disabled={saving} className={`text-xs rounded-full border px-2.5 py-1.5 outline-none ${STATUS_CLASS[status] ?? STATUS_CLASS.new}`}>
+            <select
+              value={status}
+              onChange={(e) => updateStatus(e.target.value)}
+              disabled={saving}
+              className={`text-xs rounded-full border px-2.5 py-1.5 outline-none ${STATUS_CLASS[status] ?? STATUS_CLASS.new}`}
+            >
               {STATUSES.map((s) => (<option key={s} value={s}>{STATUS_LABEL[s]}</option>))}
             </select>
           ) : (
             <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_CLASS[status] ?? STATUS_CLASS.new}`}>
               {STATUS_LABEL[status] ?? status}
             </span>
+          )}
+          {canDelete && (
+            confirming ? (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs text-ink/50">Delete?</span>
+                <button onClick={remove} className="text-xs text-red-700 hover:underline font-medium">Yes</button>
+                <button onClick={() => setConfirming(false)} className="text-xs text-ink/40 hover:underline">No</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirming(true)}
+                className="text-xs text-ink/30 hover:text-red-600 transition-colors mt-1"
+              >
+                Delete
+              </button>
+            )
           )}
         </div>
       </div>

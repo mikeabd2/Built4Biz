@@ -156,8 +156,9 @@ create policy "delete 1on1" on public.one_on_ones
 
 -- ---------- TRIGGERS --------------------------------------------------
 
--- When a new auth user signs up, link them to their roster row by email,
--- or create a fresh member if there's no match.
+-- When a new auth user signs up, link them to their roster row by email.
+-- Roster-only: if there's no matching unclaimed roster entry, the signup is
+-- rejected (the auth user insert rolls back).
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare existing uuid;
@@ -167,15 +168,27 @@ begin
   where lower(email) = lower(new.email) and user_id is null
   limit 1;
 
-  if existing is not null then
-    update public.members set user_id = new.id where id = existing;
-  else
-    insert into public.members (user_id, full_name, email)
-    values (new.id, coalesce(new.raw_user_meta_data->>'full_name', ''), new.email);
+  if existing is null then
+    raise exception 'This email is not on the group roster.'
+      using errcode = 'check_violation';
   end if;
+
+  update public.members set user_id = new.id where id = existing;
   return new;
 end;
 $$;
+
+-- Public, read-only check so the signup form can tell someone their email
+-- isn't on the roster *before* attempting to register. Returns only a boolean.
+create or replace function public.email_on_roster(p_email text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.members
+    where lower(email) = lower(p_email) and user_id is null
+  );
+$$;
+
+grant execute on function public.email_on_roster(text) to anon, authenticated;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
