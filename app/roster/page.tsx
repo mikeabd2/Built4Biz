@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Nav } from "@/components/Nav";
 import { useAuth } from "@/components/AuthProvider";
@@ -111,7 +112,7 @@ function Roster() {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-ink truncate">{m.full_name || "—"}</span>
+                  <Link href={`/directory/${m.id}`} className="font-medium text-ink truncate hover:text-pine transition-colors">{m.full_name || "—"}</Link>
                   {m.is_admin && (
                     <span className="text-[11px] text-amber border border-amber/40 rounded-full px-1.5 py-0.5">Admin</span>
                   )}

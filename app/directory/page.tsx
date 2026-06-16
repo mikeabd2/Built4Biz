@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Nav } from "@/components/Nav";
@@ -117,7 +118,7 @@ function MemberCard({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="font-medium text-ink truncate">{m.full_name || "Member"}</h2>
+            <Link href={`/directory/${m.id}`} className="font-medium text-ink truncate hover:text-pine transition-colors">{m.full_name || "Member"}</Link>
             {isMe && (
               <span className="text-[11px] text-ink/45 border border-line rounded-full px-1.5 py-0.5">You</span>
             )}
